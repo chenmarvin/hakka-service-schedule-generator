@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.pyc
+
+# Local config / generated schedules (contain real names)
+config.json
+*.xlsx
+*.docx
+
+# Claude Code local settings
+.claude/settings.local.json

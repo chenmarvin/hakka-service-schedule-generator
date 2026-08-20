@@ -1,0 +1,57 @@
+{
+  "constraints": {
+    "available_months": [],
+    "hard_pairs": [
+      {
+        "mc": "Person A",
+        "projection_must_be": [
+          "Person B",
+          "Person C"
+        ]
+      }
+    ],
+    "max_per_role": [
+      {
+        "max": 2,
+        "person": "Person D",
+        "role": "司琴"
+      }
+    ],
+    "no_same_day": [
+      {
+        "person": "Person E",
+        "roles": [
+          "司會",
+          "司琴"
+        ]
+      }
+    ],
+    "unavailable_dates": [
+      {
+        "dates": [
+          "2026-08-09"
+        ],
+        "person": "Person A"
+      }
+    ]
+  },
+  "quarter": 4,
+  "roles": {
+    "司會": [
+      "Person A",
+      "Person E",
+      "Person F"
+    ],
+    "司琴": [
+      "Person D",
+      "Person E",
+      "Person G"
+    ],
+    "投影": [
+      "Person B",
+      "Person C",
+      "Person H"
+    ]
+  },
+  "year": 2026
+}
