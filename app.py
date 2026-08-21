@@ -47,7 +47,8 @@ def generate():
         proj_pool  = cfg['roles']['投影']
         all_people = list(dict.fromkeys(mc_pool + piano_pool + proj_pool))
 
-        sundays    = quarter_sundays(year, quarter)
+        include_first_sunday = cfg.get('include_first_sunday', True)
+        sundays    = quarter_sundays(year, quarter, include_first_sunday)
         cfg_tables = build_tables(cfg, sundays)
         _, _, _, _, sunday_months, _ = cfg_tables
 

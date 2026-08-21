@@ -109,6 +109,14 @@
                 {% endfor %}
               </div>
             </div>
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="checkbox" id="include-first-sunday"
+                     {{ 'checked' if config.get('include_first_sunday', True) else '' }}>
+              <label class="form-check-label small" for="include-first-sunday">
+                包含每月第一個主日
+              </label>
+              <div class="form-text small mt-0">取消勾選則每月第一個主日不排入服事表（例如聯合聖餐主日）</div>
+            </div>
           </div>
         </div>
       </div>
@@ -273,7 +281,12 @@
               </h2>
               <div id="c-unavail" class="accordion-collapse collapse">
                 <div class="accordion-body">
-                  <p class="text-muted small mb-2">日期格式：<code>YYYY-MM-DD</code>，多個日期以逗號分隔</p>
+                  <p class="text-muted small mb-2">
+                    日期格式：<code>YYYY-MM-DD</code>（單日）、
+                    <code>YYYY-MM-DD:YYYY-MM-DD</code>（日期區間）、
+                    <code>YYYY-MM:YYYY-MM</code>（整月區間，例如請假到年底）；
+                    多筆以逗號分隔
+                  </p>
                   <table class="table table-sm table-bordered mb-2">
                     <thead><tr><th>人員</th><th>請假日期</th><th></th></tr></thead>
                     <tbody id="unavailBody"></tbody>
@@ -281,7 +294,7 @@
                   <div class="d-flex gap-1 flex-wrap">
                     <input id="nu-person" class="form-control form-control-sm" placeholder="人員" style="width:80px"
                            onkeydown="if(event.key==='Enter') addUnavailRow()">
-                    <input id="nu-dates" class="form-control form-control-sm" placeholder="如：2026-08-09"
+                    <input id="nu-dates" class="form-control form-control-sm" placeholder="如：2026-08-09 或 2026-10-25:2026-12-20"
                            onkeydown="if(event.key==='Enter') addUnavailRow()">
                     <button class="btn btn-sm btn-primary" onclick="addUnavailRow()">新增</button>
                   </div>
@@ -527,6 +540,7 @@
     config.year    = parseInt(document.getElementById('year').value);
     const qInput   = document.querySelector('input[name="quarter"]:checked');
     config.quarter = qInput ? parseInt(qInput.value) : config.quarter;
+    config.include_first_sunday = document.getElementById('include-first-sunday').checked;
 
     const btn = document.getElementById('generateBtn');
     btn.disabled = true;

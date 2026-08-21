@@ -45,8 +45,13 @@ def load_config(path: str) -> dict:
         return json.load(f)
 
 
-def quarter_sundays(year: int, quarter: int) -> list[datetime.date]:
-    """Return all Sundays in the given quarter."""
+def quarter_sundays(year: int, quarter: int,
+                     include_first_sunday: bool = True) -> list[datetime.date]:
+    """Return all Sundays in the given quarter.
+
+    If include_first_sunday is False, the first Sunday of each calendar
+    month is left out (e.g. because that Sunday is a combined/Communion
+    service with no separate duty roster)."""
     starts = {1: (1, 1), 2: (4, 1), 3: (7, 1), 4: (10, 1)}
     ends   = {1: (3, 31), 2: (6, 30), 3: (9, 30), 4: (12, 31)}
     start  = datetime.date(year, *starts[quarter])
@@ -54,7 +59,8 @@ def quarter_sundays(year: int, quarter: int) -> list[datetime.date]:
     d      = start + datetime.timedelta(days=(6 - start.weekday()) % 7)
     sundays = []
     while d <= end:
-        sundays.append(d)
+        if include_first_sunday or d.day > 7:
+            sundays.append(d)
         d += datetime.timedelta(weeks=1)
     return sundays
 
@@ -62,6 +68,49 @@ def quarter_sundays(year: int, quarter: int) -> list[datetime.date]:
 # ─────────────────────────────────────────────────────────────────────────────
 # Build runtime tables from config
 # ─────────────────────────────────────────────────────────────────────────────
+
+def _date_range(start: datetime.date, end: datetime.date) -> list[datetime.date]:
+    days = []
+    d = start
+    while d <= end:
+        days.append(d)
+        d += datetime.timedelta(days=1)
+    return days
+
+
+def _month_range(start_year: int, start_month: int,
+                  end_year: int, end_month: int) -> list[datetime.date]:
+    """All calendar days from the 1st of (start_year, start_month) through
+    the last day of (end_year, end_month), inclusive."""
+    start = datetime.date(start_year, start_month, 1)
+    if end_month == 12:
+        end = datetime.date(end_year, 12, 31)
+    else:
+        end = datetime.date(end_year, end_month + 1, 1) - datetime.timedelta(days=1)
+    return _date_range(start, end)
+
+
+def parse_unavailable_entry(token: str) -> list[datetime.date]:
+    """Parse one entry from an unavailable_dates list. Supported formats:
+      - "YYYY-MM-DD"            a single date
+      - "YYYY-MM"               every day in that month
+      - "YYYY-MM-DD:YYYY-MM-DD" every date in that (inclusive) range
+      - "YYYY-MM:YYYY-MM"       every day in that (inclusive) range of months
+    """
+    token = token.strip()
+    if ":" in token:
+        start_s, end_s = (s.strip() for s in token.split(":", 1))
+        if len(start_s) == 7 and len(end_s) == 7:
+            sy, sm = (int(x) for x in start_s.split("-"))
+            ey, em = (int(x) for x in end_s.split("-"))
+            return _month_range(sy, sm, ey, em)
+        return _date_range(datetime.date.fromisoformat(start_s),
+                            datetime.date.fromisoformat(end_s))
+    if len(token) == 7:
+        y, m = (int(x) for x in token.split("-"))
+        return _month_range(y, m, y, m)
+    return [datetime.date.fromisoformat(token)]
+
 
 def build_tables(cfg: dict, sundays: list[datetime.date]):
     c = cfg["constraints"]
@@ -93,7 +142,9 @@ def build_tables(cfg: dict, sundays: list[datetime.date]):
     unavailable: dict[str, frozenset] = {}
     for item in c.get("unavailable_dates", []):
         person = item["person"]
-        dates  = frozenset(datetime.date.fromisoformat(d) for d in item["dates"])
+        dates  = frozenset(
+            d for token in item["dates"] for d in parse_unavailable_entry(token)
+        )
         unavailable[person] = unavailable.get(person, frozenset()) | dates
 
     # sunday month index lookup
@@ -542,7 +593,7 @@ def main():
     proj_pool  = cfg["roles"]["投影"]
     all_people = list(dict.fromkeys(mc_pool + piano_pool + proj_pool))
 
-    sundays = quarter_sundays(year, quarter)
+    sundays = quarter_sundays(year, quarter, cfg.get("include_first_sunday", True))
     cfg_tables = build_tables(cfg, sundays)
     max_per_role, avail_months, hard_pairs, no_same_day, sunday_months, unavailable = cfg_tables
 
